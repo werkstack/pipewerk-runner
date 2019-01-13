@@ -1,7 +1,14 @@
 [package]
-name = "pipewerk-runner"
+name = "pipewerk_runner"
 version = "0.1.0"
 authors = ["Milad Rastian <eslashmili@gmail.com>"]
 edition = "2018"
 
+[lib]
+name = "pipewerk_runner"
+path = "src/lib.rs"
+
 [dependencies]
+serde = "1.0.82"
+serde_derive = "1.0"
+serde_yaml = "0.8"
