@@ -1,79 +1,63 @@
 use crate::config::Job;
+use crate::logger::ConsoleLogger;
+use crate::logger::Message as MessageLogger;
 use dockworker::{
     container::AttachContainer, ContainerCreateOptions, ContainerHostConfig, ContainerLogOptions,
     CreateExecOptions, Docker, StartExecOptions,
 };
 use std::io::{BufRead, BufReader};
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
-use std::thread;
 use std::time::Duration;
+
+use actix::prelude::*;
 
 #[derive(Debug)]
 pub struct Runner {
     job: Job,
     docker: Docker,
-    scheduler: Sender<RunnerMessageOut>,
-    receiver: Receiver<RunnerMessageIn>,
+    logger: Addr<ConsoleLogger>,
+}
+
+impl Actor for Runner {
+    type Context = Context<Self>;
 }
 
 #[derive(Debug)]
-pub enum OutputType {
-    Stdin,
-    Stdout,
+pub enum Message {
+    Start,
+    NoOp,
 }
 
-#[derive(Debug)]
-pub enum RunnerMessageOut {
-    Noop,
-    HelloFrom(String),
-    Log {
-        name: String,
-        outputType: OutputType,
-        output: String,
-    },
+impl actix::Message for Message {
+    type Result = ();
 }
 
-#[derive(Debug)]
-pub enum RunnerMessageIn {
-    Noop,
-}
+impl Handler<Message> for Runner {
+    type Result = ();
 
-impl Runner {
-    pub fn new(job: &Job, scheduler: Sender<RunnerMessageOut>) -> (Self, Sender<RunnerMessageIn>) {
-        let (tx, rx): (Sender<RunnerMessageIn>, Receiver<RunnerMessageIn>) = mpsc::channel();
-        scheduler.send(RunnerMessageOut::Noop);
-        let job = job.clone();
-        let docker = Docker::connect_with_defaults().unwrap();
-        let r = Runner {
-            job: job,
-            docker: docker,
-            scheduler: scheduler,
-            receiver: rx,
-        };
-        (r, tx.clone())
-    }
-
-    /*
-     * Q: Why?
-    pub fn init(&self) {
-        thread::spawn(|| {
-            self.start(1);
+    fn handle(&mut self, msg: Message, ctx: &mut Context<Self>) {
+        println!("Arrived `{:?}` MSG", msg);
+        self.logger
+            .try_send(MessageLogger::stdout(
+                self.job.name.clone(),
+                "hi! ".to_owned(),
+            ))
+            .unwrap();
+        ctx.run_later(Duration::new(5, 100), move |act, _| {
+            System::current().stop()
         });
     }
-    */
-    pub fn start(&self, howlong: u64) {
-        self.scheduler
-            .send(RunnerMessageOut::HelloFrom(self.job.name.clone()))
-            .unwrap();
-
-        match self.receiver.recv() {
-            Ok(something) => println!("got something? {:?}", something),
-            Err(e) => {
-                println!("error? {:?}", e);
+}
+impl Runner {
+    pub fn new(job: &Job, logger: Addr<ConsoleLogger>) -> Addr<Self> {
+        let job = job.clone();
+        Runner::create(|ctx| {
+            let docker = Docker::connect_with_defaults().unwrap();
+            Runner {
+                job: job,
+                docker: docker,
+                logger: logger,
             }
-        }
-        thread::sleep(Duration::from_secs(howlong));
+        })
     }
 
     pub fn run(&self) {

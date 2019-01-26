@@ -1,14 +1,13 @@
 use crate::config::Job;
-use crate::runner::{Runner, RunnerMessageIn, RunnerMessageOut};
+use crate::logger::ConsoleLogger;
+use crate::runner;
+use crate::runner::Runner;
+use actix::prelude::*;
 use std::collections::HashMap;
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
-use std::thread;
 
 #[derive(Debug)]
 pub struct Scheduler {
-    runnerSenders: HashMap<String, Sender<RunnerMessageIn>>,
-    receiver: Receiver<RunnerMessageOut>,
+    runnerAddrs: HashMap<String, Addr<Runner>>,
 }
 
 #[derive(Debug)]
@@ -18,43 +17,23 @@ struct RunnerInstance {
 
 impl Scheduler {
     pub fn new(job: &Job) -> Self {
-        let (tx, rx) = mpsc::channel();
-        let mut runnerSenders = HashMap::new();
-        let (runner, runnerSender) = Runner::new(job, tx.clone());
-        runnerSenders.insert(job.name.clone(), runnerSender);
+        let mut runnerAddrs = HashMap::new();
+        let logger = ConsoleLogger::new();
+        let runnerAddr = Runner::new(job, logger);
+        runnerAddrs.insert(job.name.clone(), runnerAddr);
         Self {
-            receiver: rx,
-            runnerSenders: runnerSenders,
+            runnerAddrs: runnerAddrs,
         }
     }
-    /*
-     * WHY?
-     *
-    fn doit(runner: &Runner) {
-        thread::spawn(move || {
-            runner.start(1);
-        });
-    }
-    */
 
     pub fn run(&self) {
-        println!("I'm running");
-        loop {
-            match self.receiver.recv() {
-                Ok(RunnerMessageOut::HelloFrom(runner_name)) => {
-                    self.runnerSenders
-                        .get(&runner_name)
-                        .unwrap()
-                        .send(RunnerMessageIn::Noop)
-                        .unwrap();
-                }
-                Ok(something) => println!("{:?}", something),
-                Err(e) => {
-                    println!("{:?}", e);
-                    break;
-                }
-            }
+        let sys = System::new("test");
+        for (name, addr) in &self.runnerAddrs {
+            addr.try_send(runner::Message::NoOp);
+            println!("{}", name);
         }
-        println!("done!");
+        println!("I'm running");
+        sys.run();
+        println!("Done");
     }
 }

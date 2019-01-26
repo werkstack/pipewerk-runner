@@ -9,6 +9,8 @@ name = "pipewerk"
 path = "src/lib.rs"
 
 [dependencies]
+actix = "0.7.9"
+futures = "0.1.25"
 serde = "1.0.82"
 serde_derive = "1.0"
 serde_yaml = "0.8"
