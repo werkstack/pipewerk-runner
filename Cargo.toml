@@ -1,14 +1,20 @@
 [package]
-name = "pipewerk_runner"
+name = "pipewerk"
 version = "0.1.0"
 authors = ["Milad Rastian <eslashmili@gmail.com>"]
 edition = "2018"
 
 [lib]
-name = "pipewerk_runner"
+name = "pipewerk"
 path = "src/lib.rs"
 
 [dependencies]
 serde = "1.0.82"
 serde_derive = "1.0"
 serde_yaml = "0.8"
+
+[dependencies.dockworker]
+git = "https://github.com/slashmili/dockworker.git"
+branch = "impl-docker-exec"
+version = "0.0.8"
+default-features = false

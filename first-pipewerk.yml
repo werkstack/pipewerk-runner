@@ -1,0 +1,5 @@
+image: ubuntu
+jobs:
+  - name: test
+    commands:
+      - echo hello
