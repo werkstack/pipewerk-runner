@@ -1,3 +1,4 @@
+use actix::prelude::System;
 use dockworker::{
     container::AttachContainer, ContainerCreateOptions, ContainerLogOptions, CreateExecOptions,
     Docker, StartExecOptions,
@@ -11,14 +12,19 @@ use std::time::Duration;
 use std::fs;
 
 fn main() {
+    let sys = System::new("test");
     let f = fs::read_to_string("first-pipewerk.yml").unwrap();
     let config = config::Config::from_str(&f).unwrap();
-    //println!("Hello, world!; {:?}", config);
 
-    //q: HOW can I reuse this?
     let docker = Docker::connect_with_defaults().unwrap();
-    let sch = scheduler::Scheduler::new(&config.jobs[0]);
-    sch.run();
+    let scheduler = scheduler::Scheduler::new(&config.jobs[0]);
+    scheduler
+        .try_send(scheduler::Message::RunJobs)
+        .expect("scheduler failed to start");
+    println!("waiting ...");
+    sys.run();
+    println!("Done");
+
     /*
     let runners: Vec<runner::Runner> = config
         .jobs
