@@ -45,13 +45,13 @@ impl actix::Message for Message {
 impl Handler<Message> for ConsoleLogger {
     type Result = ();
 
-    fn handle(&mut self, msg: Message, ctx: &mut Context<Self>) {
+    fn handle(&mut self, msg: Message, _ctx: &mut Context<Self>) {
         println!("received a log {:?}", msg)
     }
 }
 
 impl ConsoleLogger {
     pub fn new() -> Addr<Self> {
-        Self::create(|ctx: &mut Context<Self>| Self {})
+        Self::create(|_ctx: &mut Context<Self>| Self {})
     }
 }

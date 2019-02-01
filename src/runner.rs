@@ -2,8 +2,8 @@ use crate::config::Job;
 use crate::logger::ConsoleLogger;
 use crate::logger::Message as MessageLogger;
 use dockworker::{
-    container::AttachContainer, ContainerCreateOptions, ContainerHostConfig, ContainerLogOptions,
-    CreateExecOptions, Docker, StartExecOptions,
+    container::AttachContainer, ContainerCreateOptions, ContainerHostConfig, CreateExecOptions,
+    Docker, StartExecOptions,
 };
 use std::io::{BufRead, BufReader};
 use std::time::Duration;
@@ -34,9 +34,9 @@ impl actix::Message for Message {
 impl Handler<Message> for Runner {
     type Result = ();
 
-    fn handle(&mut self, msg: Message, ctx: &mut Context<Self>) {
+    fn handle(&mut self, msg: Message, _ctx: &mut Context<Self>) {
         match msg {
-            Start => self.run(),
+            Message::Start => self.run(),
             other => {
                 println!("Ignore `{:?}` MSG", other);
             }
@@ -45,7 +45,7 @@ impl Handler<Message> for Runner {
 }
 impl Runner {
     pub fn new(job: Job, logger: Addr<ConsoleLogger>) -> Addr<Self> {
-        Runner::create(|ctx| {
+        Runner::create(|_ctx| {
             let docker = Docker::connect_with_defaults().unwrap();
             Runner {
                 job: job,
