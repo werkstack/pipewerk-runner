@@ -10,7 +10,7 @@ fn main() {
     let config = config::Config::from_str(&f).unwrap();
 
     let _docker = Docker::connect_with_defaults().unwrap();
-    let scheduler = scheduler::Scheduler::new(&config.jobs[0]);
+    let scheduler = scheduler::Scheduler::new(&config.jobs);
     scheduler
         .try_send(scheduler::Message::RunJobs)
         .expect("scheduler failed to start");

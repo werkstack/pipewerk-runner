@@ -35,14 +35,16 @@ impl Handler<Message> for Scheduler {
 }
 
 impl Scheduler {
-    pub fn new(job: &Job) -> Addr<Self> {
-        let job = job.clone();
+    pub fn new(jobs: &Vec<Job>) -> Addr<Self> {
+        let cloned_jobs: Vec<Job> = jobs.iter().map(|j| j.clone()).collect();
         Scheduler::create(|_ctx| {
             let logger = ConsoleLogger::new();
-            let job_name = job.name.clone();
             let mut runner_addrs = HashMap::new();
-            let runner_addr = Runner::new(job, logger.clone());
-            runner_addrs.insert(job_name, runner_addr);
+            for job in cloned_jobs {
+                let job_name = job.name.clone();
+                let runner_addr = Runner::new(job, logger.clone());
+                runner_addrs.insert(job_name, runner_addr);
+            }
             Self {
                 runner_addrs: runner_addrs,
             }
