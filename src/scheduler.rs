@@ -51,7 +51,7 @@ impl Scheduler {
 
     pub fn run(&self) {
         for (name, addr) in &self.runner_addrs {
-            addr.try_send(runner::Message::NoOp).unwrap();
+            addr.try_send(runner::Message::Start).unwrap();
             println!("Job has been sent to `{}`", name);
         }
     }
