@@ -48,8 +48,7 @@ impl Handler<Message> for Runner {
     }
 }
 impl Runner {
-    pub fn new(job: &Job, logger: Addr<ConsoleLogger>) -> Addr<Self> {
-        let job = job.clone();
+    pub fn new(job: Job, logger: Addr<ConsoleLogger>) -> Addr<Self> {
         Runner::create(|ctx| {
             let docker = Docker::connect_with_defaults().unwrap();
             Runner {

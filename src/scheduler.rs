@@ -10,16 +10,11 @@ pub struct Scheduler {
     runnerAddrs: HashMap<String, Addr<Runner>>,
 }
 
-#[derive(Debug)]
-struct RunnerInstance {
-    runner: Runner,
-}
-
 impl Scheduler {
     pub fn new(job: &Job) -> Self {
         let mut runnerAddrs = HashMap::new();
         let logger = ConsoleLogger::new();
-        let runnerAddr = Runner::new(job, logger);
+        let runnerAddr = Runner::new(job.clone(), logger.clone());
         runnerAddrs.insert(job.name.clone(), runnerAddr);
         Self {
             runnerAddrs: runnerAddrs,
