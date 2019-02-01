@@ -88,19 +88,23 @@ impl Runner {
             let mut stderr_line = String::new();
             let stdout_size = stdout_reader.read_line(&mut stdout_line).unwrap();
             let stderr_size = stderr_reader.read_line(&mut stderr_line).unwrap();
-            self.logger
-                .try_send(MessageLogger::stdout(
-                    self.job.name.clone(),
-                    stdout_line.to_owned(),
-                ))
-                .unwrap();
+            if stdout_size > 0 {
+                self.logger
+                    .try_send(MessageLogger::stdout(
+                        self.job.name.clone(),
+                        stdout_line.to_owned(),
+                    ))
+                    .unwrap();
+            }
 
-            self.logger
-                .try_send(MessageLogger::stderr(
-                    self.job.name.clone(),
-                    stdout_line.to_owned(),
-                ))
-                .unwrap();
+            if stderr_size > 0 {
+                self.logger
+                    .try_send(MessageLogger::stderr(
+                        self.job.name.clone(),
+                        stderr_line.to_owned(),
+                    ))
+                    .unwrap();
+            }
 
             let exec_info = self.docker.exec_info(&exec.id).unwrap();
             if exec_info.Running == false && stderr_size == 0 && stdout_size == 0 {
