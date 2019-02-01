@@ -9,7 +9,7 @@ impl Actor for ConsoleLogger {
 
 #[derive(Debug)]
 pub enum OutputType {
-    Stdin,
+    Stderr,
     Stdout,
 }
 
@@ -26,6 +26,14 @@ impl Message {
             runner_name: runner_name,
             text: text,
             output: OutputType::Stdout,
+        }
+    }
+
+    pub fn stderr(runner_name: String, text: String) -> Self {
+        Self {
+            runner_name: runner_name,
+            text: text,
+            output: OutputType::Stderr,
         }
     }
 }

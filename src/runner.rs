@@ -35,16 +35,12 @@ impl Handler<Message> for Runner {
     type Result = ();
 
     fn handle(&mut self, msg: Message, ctx: &mut Context<Self>) {
-        println!("Arrived `{:?}` MSG", msg);
-        self.logger
-            .try_send(MessageLogger::stdout(
-                self.job.name.clone(),
-                "hi! ".to_owned(),
-            ))
-            .unwrap();
-        ctx.run_later(Duration::new(5, 100), move |act, _| {
-            System::current().stop()
-        });
+        match msg {
+            Start => self.run(),
+            other => {
+                println!("Ignore `{:?}` MSG", other);
+            }
+        }
     }
 }
 impl Runner {
@@ -96,10 +92,23 @@ impl Runner {
             let mut stderr_line = String::new();
             let stdout_size = stdout_reader.read_line(&mut stdout_line).unwrap();
             let stderr_size = stderr_reader.read_line(&mut stderr_line).unwrap();
-            println!("stdout {:4}: {}", stdout_size, stdout_line);
-            println!("stderr {:4}: {}", stderr_size, stderr_line);
+            self.logger
+                .try_send(MessageLogger::stdout(
+                    self.job.name.clone(),
+                    stdout_line.to_owned(),
+                ))
+                .unwrap();
+
+            self.logger
+                .try_send(MessageLogger::stderr(
+                    self.job.name.clone(),
+                    stdout_line.to_owned(),
+                ))
+                .unwrap();
+
             let exec_info = self.docker.exec_info(&exec.id).unwrap();
             if exec_info.Running == false && stderr_size == 0 && stdout_size == 0 {
+                //System::current().stop();
                 break;
             }
         }

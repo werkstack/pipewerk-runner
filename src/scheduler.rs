@@ -25,9 +25,9 @@ impl Scheduler {
         let sys = System::new("test");
         for (name, addr) in &self.runnerAddrs {
             addr.try_send(runner::Message::NoOp);
-            println!("{}", name);
+            println!("Job has been sent to `{}`", name);
         }
-        println!("I'm running");
+        println!("waiting ...");
         sys.run();
         println!("Done");
     }
