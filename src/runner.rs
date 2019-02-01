@@ -71,10 +71,6 @@ impl Runner {
 
         let mut exec_config = CreateExecOptions::new();
         exec_config.cmd("ls".to_string()).cmd("/opt/app".to_owned());
-        //exec_config
-        //    .cmd("./entrypoint.sh".to_string())
-        //    .cmd("./sample/apache-2.0.txt".to_string())
-        //    .cmd("./sample/bsd4.txt".to_string());
         let exec = self
             .docker
             .container_create_exec_instance(&container.id, &exec_config)
