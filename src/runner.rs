@@ -63,14 +63,15 @@ impl Runner {
 
     pub fn run(&self) {
         let mut host_config = ContainerHostConfig::new();
-        host_config.binds(format!("{}:/opt/app", Self::current_dir()));
+        host_config
+            .binds(format!("{}:/opt/app", Self::current_dir()))
+            .auto_remove(true);
 
         let mut create = ContainerCreateOptions::new(&self.job.image.to_owned());
-        create.tty(true).stop_timeout(Duration::from_secs(10));
         create
-            .host_config(host_config)
-            .entrypoint(vec!["sleep".into()])
-            .cmd("20".to_string());
+            .tty(true)
+            .stop_timeout(Duration::from_secs(10))
+            .host_config(host_config);
 
         let container = self.docker.create_container(None, &create).unwrap();
         self.docker.start_container(&container.id).unwrap();
@@ -83,6 +84,9 @@ impl Runner {
                 }
             }
         }
+        self.docker
+            .stop_container(&container.id, Duration::from_secs(1))
+            .unwrap();
     }
 
     fn exec(&self, container: &CreateContainerResponse, command: String) -> Option<u32> {
