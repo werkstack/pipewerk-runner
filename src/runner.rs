@@ -2,9 +2,10 @@ use crate::config::Job;
 use crate::logger::ConsoleLogger;
 use crate::logger::Message as MessageLogger;
 use dockworker::{
-    container::AttachContainer, ContainerCreateOptions, ContainerHostConfig, CreateExecOptions,
-    Docker, StartExecOptions,
+    container::AttachContainer, ContainerCreateOptions, ContainerHostConfig,
+    CreateContainerResponse, CreateExecOptions, CreateExecResponse, Docker, StartExecOptions,
 };
+use std::env;
 use std::io::{BufRead, BufReader};
 use std::time::Duration;
 
@@ -57,9 +58,9 @@ impl Runner {
 
     pub fn run(&self) {
         let mut host_config = ContainerHostConfig::new();
-        host_config.binds("/Users/milad/dev/pipewerk-runner:/opt/app".to_owned());
+        host_config.binds(format!("{}:/opt/app", Self::current_dir()));
 
-        let mut create = ContainerCreateOptions::new("test-iostream");
+        let mut create = ContainerCreateOptions::new(&self.job.image.to_owned());
         create.tty(true).stop_timeout(Duration::from_secs(10));
         create
             .host_config(host_config)
@@ -69,8 +70,14 @@ impl Runner {
         let container = self.docker.create_container(None, &create).unwrap();
         self.docker.start_container(&container.id).unwrap();
 
+        for command in &self.job.commands {
+            self.exec(&container, command.to_owned());
+        }
+    }
+
+    fn exec(&self, container: &CreateContainerResponse, command: String) {
         let mut exec_config = CreateExecOptions::new();
-        exec_config.cmd("ls".to_string()).cmd("/opt/app".to_owned());
+        exec_config.cmd("ls".to_owned()).cmd("/opt/app".to_owned());
         let exec = self
             .docker
             .container_create_exec_instance(&container.id, &exec_config)
@@ -80,9 +87,17 @@ impl Runner {
             .docker
             .start_exec(&exec.id, &exec_start_config)
             .unwrap();
-        let cont: AttachContainer = res.into();
-        let mut stdout_reader = BufReader::new(cont.stdout);
-        let mut stderr_reader = BufReader::new(cont.stderr);
+        let attached_container: AttachContainer = res.into();
+        self.capture_stdio(attached_container, exec);
+    }
+
+    fn capture_stdio(
+        &self,
+        attached_container: AttachContainer,
+        exec: CreateExecResponse,
+    ) -> Option<u32> {
+        let mut stdout_reader = BufReader::new(attached_container.stdout);
+        let mut stderr_reader = BufReader::new(attached_container.stderr);
         loop {
             let mut stdout_line = String::new();
             let mut stderr_line = String::new();
@@ -109,8 +124,17 @@ impl Runner {
             let exec_info = self.docker.exec_info(&exec.id).unwrap();
             if exec_info.Running == false && stderr_size == 0 && stdout_size == 0 {
                 //System::current().stop();
-                break;
+                println!("exec_info: {:?}", exec_info);
+                return exec_info.ExitCode;
             }
         }
+    }
+
+    fn current_dir() -> String {
+        env::current_dir()
+            .unwrap()
+            .into_os_string()
+            .into_string()
+            .unwrap()
     }
 }
