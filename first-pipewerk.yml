@@ -3,3 +3,8 @@ jobs:
   - name: test
     commands:
       - echo hello
+      - echo hello2
+
+  - name: test2
+    commands:
+      - echo hello

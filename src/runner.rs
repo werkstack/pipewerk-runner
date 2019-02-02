@@ -6,6 +6,11 @@ use dockworker::{
     CreateContainerResponse, CreateExecOptions, CreateExecResponse, Docker, StartExecOptions,
 };
 use std::env;
+use std::fs;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
+
 use std::io::{BufRead, BufReader};
 use std::time::Duration;
 
@@ -81,8 +86,9 @@ impl Runner {
     }
 
     fn exec(&self, container: &CreateContainerResponse, command: String) -> Option<u32> {
+        let command_path = self.write_command(command);
         let mut exec_config = CreateExecOptions::new();
-        exec_config.cmd("ls".to_owned()).cmd("/opt/app".to_owned());
+        exec_config.cmd("sh".to_owned()).cmd(command_path);
         let exec = self
             .docker
             .container_create_exec_instance(&container.id, &exec_config)
@@ -133,6 +139,16 @@ impl Runner {
                 return exec_info.ExitCode;
             }
         }
+    }
+
+    fn write_command(&self, command: String) -> String {
+        let dir = format!("{}/.pipewerk-tmp", Self::current_dir());
+        fs::create_dir_all(&dir).unwrap();
+        let command_path = format!("{}/{}.pipe", dir, self.job.name);
+        let path = Path::new(&command_path);
+        let mut file = File::create(&path).unwrap();
+        file.write_all(command.as_bytes()).unwrap();
+        format!("/opt/app/.pipewerk-tmp/{}.pipe", self.job.name)
     }
 
     fn current_dir() -> String {
