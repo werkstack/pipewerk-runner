@@ -71,11 +71,16 @@ impl Runner {
         self.docker.start_container(&container.id).unwrap();
 
         for command in &self.job.commands {
-            self.exec(&container, command.to_owned());
+            match self.exec(&container, command.to_owned()) {
+                Some(0) => continue,
+                error => {
+                    break;
+                }
+            }
         }
     }
 
-    fn exec(&self, container: &CreateContainerResponse, command: String) {
+    fn exec(&self, container: &CreateContainerResponse, command: String) -> Option<u32> {
         let mut exec_config = CreateExecOptions::new();
         exec_config.cmd("ls".to_owned()).cmd("/opt/app".to_owned());
         let exec = self
@@ -88,7 +93,7 @@ impl Runner {
             .start_exec(&exec.id, &exec_start_config)
             .unwrap();
         let attached_container: AttachContainer = res.into();
-        self.capture_stdio(attached_container, exec);
+        self.capture_stdio(attached_container, exec)
     }
 
     fn capture_stdio(

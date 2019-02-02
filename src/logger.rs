@@ -52,6 +52,9 @@ impl Handler<Message> for ConsoleLogger {
 
 impl ConsoleLogger {
     pub fn new() -> Addr<Self> {
-        Self::create(|_ctx: &mut Context<Self>| Self {})
+        Self::create(|ctx: &mut Context<Self>| {
+            ctx.set_mailbox_capacity(1000);
+            Self {}
+        })
     }
 }
