@@ -40,7 +40,12 @@ impl Handler<Message> for Runner {
     fn handle(&mut self, msg: Message, _ctx: &mut Context<Self>) {
         match msg {
             Message::Start(scheduler) => {
+                scheduler
+                    .try_send(SchedulerMessage::JobStarted(self.job.name.to_owned()))
+                    .unwrap();
+
                 self.scheduler = Some(scheduler);
+
                 self.run();
             }
             other => {

@@ -24,6 +24,7 @@ impl Actor for Scheduler {
 #[derive(Debug)]
 pub enum Message {
     RunJobs(Addr<Scheduler>),
+    JobStarted(String),
     JobExit(String, u32),
 }
 
@@ -38,6 +39,7 @@ impl Handler<Message> for Scheduler {
         match msg {
             Message::RunJobs(scheduler) => self.run(scheduler),
             Message::JobExit(job_name, exit_code) => self.job_exited(job_name, exit_code),
+            Message::JobStarted(job_name) => self.update_running_status(job_name, true),
         }
     }
 }
@@ -64,7 +66,7 @@ impl Scheduler {
         })
     }
 
-    pub fn run(&self, scheduler: Addr<Scheduler>) {
+    fn run(&self, scheduler: Addr<Scheduler>) {
         for (name, meta) in &self.jobs_meta {
             meta.job_runner
                 .try_send(runner::Message::Start(scheduler.clone()))
@@ -80,7 +82,17 @@ impl Scheduler {
         }
     }
 
+    fn update_running_status(&mut self, job_name: String, status: bool) {
+        //TODO: use map
+        match self.jobs_meta.get_mut(&job_name) {
+            Some(job_meta) => {
+                job_meta.is_running = status;
+            }
+            _ => (),
+        }
+    }
     fn update_exit_code(&mut self, job_name: String, exit_code: u32) {
+        //TODO: use map
         match self.jobs_meta.get_mut(&job_name) {
             Some(job_meta) => {
                 job_meta.is_running = false;
