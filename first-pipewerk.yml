@@ -1,10 +1,12 @@
-image: ubuntu
+image: busybox
 jobs:
   - name: test
     commands:
-      - echo hello
+      - ps awuxww
       - echo hello2
-
-  - name: test2
-    commands:
-      - echo hello
+      - |
+        if [ "$branch_name" == "master" ] ; then
+          echo "master"
+        else
+          echo "not master"
+        fi
