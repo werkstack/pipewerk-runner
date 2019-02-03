@@ -94,7 +94,7 @@ impl Runner {
         match &self.scheduler {
             Some(scheduler) => {
                 scheduler
-                    .try_send(SchedulerMessage::JobExit(
+                    .try_send(SchedulerMessage::JobFinished(
                         self.job.name.to_owned(),
                         exit_code.unwrap(),
                     ))

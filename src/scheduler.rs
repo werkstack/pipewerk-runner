@@ -25,7 +25,7 @@ impl Actor for Scheduler {
 pub enum Message {
     RunJobs(Addr<Scheduler>),
     JobStarted(String),
-    JobExit(String, u32),
+    JobFinished(String, u32),
 }
 
 impl actix::Message for Message {
@@ -38,7 +38,7 @@ impl Handler<Message> for Scheduler {
     fn handle(&mut self, msg: Message, _ctx: &mut Context<Self>) {
         match msg {
             Message::RunJobs(scheduler) => self.run(scheduler),
-            Message::JobExit(job_name, exit_code) => self.job_exited(job_name, exit_code),
+            Message::JobFinished(job_name, exit_code) => self.job_exited(job_name, exit_code),
             Message::JobStarted(job_name) => self.update_running_status(job_name, true),
         }
     }
