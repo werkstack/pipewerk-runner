@@ -1,6 +1,7 @@
 use crate::config::Job;
 use crate::logger::ConsoleLogger;
 use crate::logger::Message as MessageLogger;
+use crate::scheduler::{Message as SchedulerMessage, Scheduler};
 use dockworker::{
     container::AttachContainer, ContainerCreateOptions, ContainerHostConfig,
     CreateContainerResponse, CreateExecOptions, CreateExecResponse, Docker, StartExecOptions,
@@ -16,6 +17,7 @@ pub struct Runner {
     job: Job,
     docker: Docker,
     logger: Addr<ConsoleLogger>,
+    scheduler: Option<Addr<Scheduler>>,
 }
 
 impl Actor for Runner {
@@ -24,7 +26,7 @@ impl Actor for Runner {
 
 #[derive(Debug)]
 pub enum Message {
-    Start,
+    Start(Addr<crate::scheduler::Scheduler>),
     NoOp,
 }
 
@@ -37,7 +39,10 @@ impl Handler<Message> for Runner {
 
     fn handle(&mut self, msg: Message, _ctx: &mut Context<Self>) {
         match msg {
-            Message::Start => self.run(),
+            Message::Start(scheduler) => {
+                self.scheduler = Some(scheduler);
+                self.run();
+            }
             other => {
                 println!("Ignore `{:?}` MSG", other);
             }
@@ -52,6 +57,7 @@ impl Runner {
                 job: job,
                 docker: docker,
                 logger: logger,
+                scheduler: None,
             }
         })
     }
@@ -71,20 +77,39 @@ impl Runner {
         let container = self.docker.create_container(None, &create).unwrap();
         self.docker.start_container(&container.id).unwrap();
 
-        for command in &self.job.commands {
-            match self.exec(&container, command.to_owned()) {
-                Some(0) => continue,
-                _error => {
-                    break;
-                }
+        let exit_code: Option<u32> =
+            self.job
+                .commands
+                .iter()
+                .fold(Some(0), |result, command| match result {
+                    Some(0) => self.exec(&container, command.to_owned()),
+                    other_value => other_value,
+                });
+        //TODO: use Option.map
+        match &self.scheduler {
+            Some(scheduler) => {
+                scheduler
+                    .try_send(SchedulerMessage::JobExit(
+                        self.job.name.to_owned(),
+                        exit_code.unwrap(),
+                    ))
+                    .unwrap();
             }
-        }
+            _ => (),
+        };
         self.docker
             .stop_container(&container.id, Duration::from_secs(1))
             .unwrap();
     }
 
     fn exec(&self, container: &CreateContainerResponse, command: String) -> Option<u32> {
+        self.logger
+            .try_send(MessageLogger::stdin(
+                self.job.name.clone(),
+                command.to_owned(),
+            ))
+            .unwrap();
+
         let mut exec_config = CreateExecOptions::new();
         exec_config
             .cmd("sh".to_owned())
@@ -136,7 +161,6 @@ impl Runner {
             let exec_info = self.docker.exec_info(&exec.id).unwrap();
             if exec_info.Running == false && stderr_size == 0 && stdout_size == 0 {
                 //System::current().stop();
-                println!("exec_info: {:?}", exec_info);
                 return exec_info.ExitCode;
             }
         }

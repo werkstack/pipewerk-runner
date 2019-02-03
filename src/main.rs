@@ -12,7 +12,7 @@ fn main() {
     let _docker = Docker::connect_with_defaults().unwrap();
     let scheduler = scheduler::Scheduler::new(&config.jobs);
     scheduler
-        .try_send(scheduler::Message::RunJobs)
+        .try_send(scheduler::Message::RunJobs(scheduler.clone()))
         .expect("scheduler failed to start");
     println!("waiting ...");
     sys.run();

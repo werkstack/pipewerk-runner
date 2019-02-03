@@ -11,6 +11,7 @@ impl Actor for ConsoleLogger {
 pub enum OutputType {
     Stderr,
     Stdout,
+    Stdin,
 }
 
 #[derive(Debug)]
@@ -34,6 +35,14 @@ impl Message {
             runner_name: runner_name,
             text: text,
             output: OutputType::Stderr,
+        }
+    }
+
+    pub fn stdin(runner_name: String, text: String) -> Self {
+        Self {
+            runner_name: runner_name,
+            text: text,
+            output: OutputType::Stdin,
         }
     }
 }
