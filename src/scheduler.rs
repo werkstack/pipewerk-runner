@@ -52,7 +52,8 @@ impl Scheduler {
             let mut jobs_meta = HashMap::new();
             for job in cloned_jobs {
                 let job_name = job.name.clone();
-                let job_runner = Runner::new(job, logger.clone());
+                let cloned_logger = logger.clone();
+                let job_runner = Runner::create(|_ctx| Runner::new(job, cloned_logger));
                 let runner_meta = RunnerMeta {
                     job_runner: job_runner,
                     exit_code: None,

@@ -56,16 +56,14 @@ impl Handler<Message> for Runner {
     }
 }
 impl Runner {
-    pub fn new(job: Job, logger: Addr<ConsoleLogger>) -> Addr<Self> {
-        Runner::create(|_ctx| {
-            let docker = Docker::connect_with_defaults().unwrap();
-            Runner {
-                job: job,
-                docker: docker,
-                logger: logger,
-                scheduler: None,
-            }
-        })
+    pub fn new(job: Job, logger: Addr<ConsoleLogger>) -> Self {
+        let docker = Docker::connect_with_defaults().unwrap();
+        Runner {
+            job: job,
+            docker: docker,
+            logger: logger,
+            scheduler: None,
+        }
     }
 
     pub fn run(&self) {
