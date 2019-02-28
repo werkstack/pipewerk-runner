@@ -3,6 +3,7 @@ pub struct Job {
     pub name: String,
     #[serde(default)]
     pub image: String,
+    pub ssh_keys: Vec<String>,
     pub commands: Vec<String>,
 }
 
@@ -10,6 +11,7 @@ pub struct Job {
 pub struct Config {
     #[serde(default = "default_image")]
     image: String,
+    ssh_keys: Vec<String>,
     pub jobs: Vec<Job>,
 }
 
@@ -51,6 +53,9 @@ impl Job {
         let mut job = self.clone();
         if job.image == "" {
             job.image = config.image.clone();
+        }
+        if job.ssh_keys.is_empty() {
+            job.ssh_keys = config.ssh_keys.clone();
         }
         job
     }
