@@ -8,6 +8,7 @@ use dockworker::{
 };
 use std::env;
 use std::io::{BufRead, BufReader};
+use std::path::Path;
 use std::time::Duration;
 
 use actix::prelude::*;
@@ -68,16 +69,11 @@ impl Runner {
     }
 
     pub fn run(&self) {
-        let mut host_config = ContainerHostConfig::new();
-        host_config
-            .binds(format!("{}:/opt/app", Self::current_dir()))
-            .auto_remove(true);
-
         let mut create = ContainerCreateOptions::new(&self.job.image.to_owned());
         create
             .tty(true)
             .stop_timeout(Duration::from_secs(10))
-            .host_config(host_config);
+            .host_config(self.host_config());
 
         let container = self.docker.create_container(None, &create).unwrap();
         self.docker.start_container(&container.id).unwrap();
@@ -169,6 +165,22 @@ impl Runner {
                 return exec_info.ExitCode;
             }
         }
+    }
+
+    fn host_config(&self) -> ContainerHostConfig {
+        let mut host_config = ContainerHostConfig::new();
+        host_config
+            .binds(format!("{}:/opt/app", Self::current_dir()))
+            .auto_remove(true);
+        //TODO: improve
+        for ssh_key in &self.job.ssh_keys {
+            if let Some(file_name) = Path::new(ssh_key).file_name() {
+                if let Ok(basename) = file_name.to_os_string().into_string() {
+                    host_config.binds(format!("{}:/root/.ssh/{}", ssh_key, basename));
+                }
+            }
+        }
+        host_config
     }
 
     fn current_dir() -> String {
