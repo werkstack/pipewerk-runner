@@ -48,16 +48,15 @@ impl Scheduler {
     pub fn new(jobs: &Vec<Job>) -> Addr<Self> {
         let cloned_jobs: Vec<Job> = jobs.iter().map(|j| j.clone()).collect();
         Scheduler::create(|_ctx| {
-            let logger = ConsoleLogger::create(|ctx| {
+            let logger = Arbiter::start(|ctx: &mut Context<ConsoleLogger>| {
                 ctx.set_mailbox_capacity(1000);
                 ConsoleLogger::new()
             });
-            ConsoleLogger::new();
             let mut jobs_meta = HashMap::new();
             for job in cloned_jobs {
                 let job_name = job.name.clone();
                 let cloned_logger = logger.clone();
-                let job_runner = Runner::create(|_ctx| Runner::new(job, cloned_logger));
+                let job_runner = Arbiter::start(|_| Runner::new(job, cloned_logger));
                 let runner_meta = RunnerMeta {
                     job_runner: job_runner,
                     exit_code: None,
