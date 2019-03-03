@@ -9,6 +9,7 @@ use dockworker::{
 use std::env;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
+use std::path::PathBuf;
 use std::time::Duration;
 
 use actix::prelude::*;
@@ -71,6 +72,7 @@ impl Runner {
         create
             .tty(true)
             .stop_timeout(Duration::from_secs(10))
+            .working_dir(PathBuf::from("/opt/app"))
             .host_config(self.host_config());
 
         let container = self.docker.create_container(None, &create).unwrap();
