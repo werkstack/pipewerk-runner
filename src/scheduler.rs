@@ -109,6 +109,6 @@ impl Scheduler {
     fn is_any_running_job(&self) -> bool {
         self.jobs_meta
             .iter()
-            .fold(true, |result, (_, meta)| meta.is_running && result)
+            .fold(false, |result, (_, meta)| meta.is_running || result)
     }
 }
