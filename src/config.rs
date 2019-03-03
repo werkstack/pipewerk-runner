@@ -3,6 +3,7 @@ pub struct Job {
     pub name: String,
     #[serde(default)]
     pub image: String,
+    #[serde(default)]
     pub ssh_keys: Vec<String>,
     pub commands: Vec<String>,
 }
