@@ -9,7 +9,16 @@ use std::collections::HashMap;
 struct RunnerMeta {
     job_runner: Addr<Runner>,
     exit_code: Option<u32>,
-    is_running: bool,
+    state: RunnerState,
+}
+
+#[derive(Debug, PartialEq)]
+enum RunnerState {
+    NotStarted,
+    Pending,
+    Starting,
+    Running,
+    Finished,
 }
 
 #[derive(Debug)]
@@ -39,7 +48,7 @@ impl Handler<Message> for Scheduler {
         match msg {
             Message::RunJobs(scheduler) => self.run(scheduler),
             Message::JobFinished(job_name, exit_code) => self.job_exited(job_name, exit_code),
-            Message::JobStarted(job_name) => self.update_running_status(job_name, true),
+            Message::JobStarted(job_name) => self.update_status(job_name, RunnerState::Running),
         }
     }
 }
@@ -60,7 +69,7 @@ impl Scheduler {
                 let runner_meta = RunnerMeta {
                     job_runner: job_runner,
                     exit_code: None,
-                    is_running: false,
+                    state: RunnerState::NotStarted,
                 };
                 jobs_meta.insert(job_name, runner_meta);
             }
@@ -86,11 +95,11 @@ impl Scheduler {
         }
     }
 
-    fn update_running_status(&mut self, job_name: String, status: bool) {
+    fn update_status(&mut self, job_name: String, state: RunnerState) {
         //TODO: use map
         match self.jobs_meta.get_mut(&job_name) {
             Some(job_meta) => {
-                job_meta.is_running = status;
+                job_meta.state = state;
             }
             _ => (),
         }
@@ -99,7 +108,7 @@ impl Scheduler {
         //TODO: use map
         match self.jobs_meta.get_mut(&job_name) {
             Some(job_meta) => {
-                job_meta.is_running = false;
+                job_meta.state = RunnerState::Finished;
                 job_meta.exit_code = Some(exit_code);
             }
             _ => (),
@@ -109,6 +118,7 @@ impl Scheduler {
     fn is_any_running_job(&self) -> bool {
         self.jobs_meta
             .iter()
-            .fold(false, |result, (_, meta)| meta.is_running || result)
+            .map(|(_, meta)| meta.state == RunnerState::Running)
+            .fold(false, |result, is_running| is_running || result)
     }
 }
