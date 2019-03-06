@@ -87,23 +87,15 @@ impl Scheduler {
     }
 
     fn update_running_status(&mut self, job_name: String, status: bool) {
-        //TODO: use map
-        match self.jobs_meta.get_mut(&job_name) {
-            Some(job_meta) => {
-                job_meta.is_running = status;
-            }
-            _ => (),
-        }
+        self.jobs_meta.get_mut(&job_name).map(|job_meta| {
+            job_meta.is_running = status;
+        });
     }
     fn update_exit_code(&mut self, job_name: String, exit_code: u32) {
-        //TODO: use map
-        match self.jobs_meta.get_mut(&job_name) {
-            Some(job_meta) => {
-                job_meta.is_running = false;
-                job_meta.exit_code = Some(exit_code);
-            }
-            _ => (),
-        }
+        self.jobs_meta.get_mut(&job_name).map(|job_meta| {
+            job_meta.is_running = false;
+            job_meta.exit_code = Some(exit_code);
+        });
     }
 
     fn is_any_running_job(&self) -> bool {

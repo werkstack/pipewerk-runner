@@ -86,18 +86,14 @@ impl Runner {
                     Some(0) => self.exec(&container, command.to_owned()),
                     other_value => other_value,
                 });
-        //TODO: use Option.map
-        match &self.scheduler {
-            Some(scheduler) => {
-                scheduler
-                    .try_send(SchedulerMessage::JobFinished(
-                        self.job.name.to_owned(),
-                        exit_code.unwrap(),
-                    ))
-                    .unwrap();
-            }
-            _ => (),
-        };
+        self.scheduler.as_ref().map(|scheduler| {
+            scheduler
+                .try_send(SchedulerMessage::JobFinished(
+                    self.job.name.to_owned(),
+                    exit_code.unwrap(),
+                ))
+                .unwrap();
+        });
         self.docker
             .stop_container(&container.id, Duration::from_secs(1))
             .unwrap();
